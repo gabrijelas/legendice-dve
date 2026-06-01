@@ -243,7 +243,7 @@
             </div>
             <div class="poll-option" onclick="selectPoll(this, 'Nisam baš najbolje...')">
                 <input type="radio" name="mood" id="opt3">
-                <label for="opt3">🌧️ Nisam baš najbolje, muči me nešto. </label>
+                <label for="opt3">🌧️ Nisam baš najbolje, muci me nesto. </label>
             </div>
 
             <div id="poll-loader" class="loader"></div>
@@ -276,7 +276,8 @@
         const SUPABASE_URL = "https://qboyewrrbravcruiciyf.supabase.co"; 
         const SUPABASE_ANON_KEY = "sb_secret_JMNyx8dkBZsCSh7f1T7lYA_FVH71Imi"; 
 
-        const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Promenili smo ime ovde da pretraživač ne može da ga pomeša sa eksternom bibliotekom
+        const mojSupabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let selectedMood = "";
         let uploadedImageUrl = "";
@@ -298,13 +299,13 @@
                 const fileExt = file.name.split('.').pop();
                 const fileName = `gate_${Date.now()}.${fileExt}`;
 
-                let { error: uploadError } = await supabase.storage
+                let { error: uploadError } = await mojSupabase.storage
                     .from('slike')
                     .upload(fileName, file);
 
                 if (uploadError) throw uploadError;
 
-                const { data } = supabase.storage
+                const { data } = mojSupabase.storage
                     .from('slike')
                     .getPublicUrl(fileName);
 
@@ -346,11 +347,11 @@
             pollLoader.style.display = "block";
 
             try {
-                await supabase
+                await mojSupabase
                     .from('anketa')
                     .insert([{ odgovor: selectedMood }]);
 
-                await supabase
+                await mojSupabase
                     .from('poruke')
                     .insert([{
                         autor: currentUser,
@@ -395,13 +396,13 @@
                 const fileExt = file.name.split('.').pop();
                 const fileName = `feed_${Date.now()}.${fileExt}`;
                 
-                let { error: uploadError } = await supabase.storage
+                let { error: uploadError } = await mojSupabase.storage
                     .from('slike')
                     .upload(fileName, file);
 
                 if (uploadError) throw uploadError;
 
-                const { data } = supabase.storage
+                const { data } = mojSupabase.storage
                     .from('slike')
                     .getPublicUrl(fileName);
 
@@ -424,7 +425,7 @@
             }
 
             try {
-                await supabase
+                await mojSupabase
                     .from('poruke')
                     .insert([{
                         autor: currentUser,
@@ -449,7 +450,7 @@
             feedContainer.innerHTML = "<p style='color:#adb5bd;'>Učitavam zid...</p>";
 
             try {
-                let { data: poruke, error } = await supabase
+                let { data: poruke, error } = await mojSupabase
                     .from('poruke')
                     .select('*')
                     .order('created_at', { ascending: false });
@@ -486,7 +487,7 @@
 
         async function addReaction(postId, emoji) {
             try {
-                await supabase
+                await mojSupabase
                     .from('poruke')
                     .update({ reakcija: emoji })
                     .eq('id', postId);
