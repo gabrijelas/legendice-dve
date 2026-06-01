@@ -191,7 +191,7 @@
             line-height: 1.4;
         }
 
-        /* Kompletan novi CSS za napredne reakcije */
+        /* Reakcije stilovi */
         .reactions-container {
             position: relative;
             border-top: 1px solid #f1f3f5;
@@ -251,7 +251,6 @@
             padding: 3px 8px;
             border-radius: 12px;
             border: 1px solid #ffe3e8;
-            cursor: pointer;
         }
 
         /* Sekcija za komentare */
@@ -348,6 +347,7 @@
 <body>
 
     <div class="container">
+        <!-- KAPIJA SA IZBOROM KORISNIKA -->
         <div id="screen-gate" class="screen active">
             <h1>Dobrodošao/la ❤️</h1>
             <p class="subtitle">Ko nam to danas otvara kapiju?</p>
@@ -367,6 +367,7 @@
             <button class="btn" id="btn-gate-next" style="display: none;">Otvori kapiju ✨</button>
         </div>
 
+        <!-- ANKETA -->
         <div id="screen-poll" class="screen">
             <h1>Kako si mi danas? 🥰</h1>
             <p class="subtitle">Izaberi odgovor da bi nastavio/la dalje...</p>
@@ -388,6 +389,7 @@
             <button class="btn" id="btn-poll-submit" disabled style="opacity: 0.5;">Pošalji odgovor 💌</button>
         </div>
 
+        <!-- GLAVNI EKRAN (ZID) -->
         <div id="screen-main" class="screen">
             <h1 id="welcome-title"> Feed Savršenih </h1>
             <p class="subtitle" id="sweet-comment">Hvala ti na odgovoru!</p>
@@ -425,13 +427,13 @@
         const userGirlBtn = document.getElementById('user-girl');
 
         userGuyBtn.addEventListener('click', () => {
-            currentUser = "Gospodin Savršeni 👑";
+            currentUser = "Gossip dečko 👑";
             userGuyBtn.classList.add('selected');
             userGirlBtn.classList.remove('selected');
         });
 
         userGirlBtn.addEventListener('click', () => {
-            currentUser = "Gospodjica Savršena 🌸";
+            currentUser = "Gossip devojka 🌸";
             userGirlBtn.classList.add('selected');
             userGuyBtn.classList.remove('selected');
         });
@@ -618,7 +620,6 @@
             feedContainer.innerHTML = "<p style='color:#adb5bd;'>Učitavam zid...</p>";
 
             try {
-                // 1. Povuci sve poruke
                 let { data: poruke, error: errorPoruke } = await supabase
                     .from('poruke')
                     .select('*')
@@ -626,24 +627,14 @@
 
                 if (errorPoruke) throw errorPoruke;
 
-                // 2. Povuci sve komentare
-                let sviKomentari = [];
+                let sveStvari = [];
                 try {
                     let { data: komData } = await supabase
                         .from('komentari')
                         .select('*')
                         .order('created_at', { ascending: true });
-                    if (komData) sviKomentari = komData;
-                } catch(e) { console.log("Tabela komentari još ne reaguje"); }
-
-                // 3. Povuci sve reakcije iz NOVE tabele
-                let sveReakcije = [];
-                try {
-                    let { data: reakcijeData } = await supabase
-                        .from('reakcije')
-                        .select('*');
-                    if (reakcijeData) sveReakcije = reakcijeData;
-                } catch(e) { console.log("Tabela reakcije još ne reaguje"); }
+                    if (komData) sveStvari = komData;
+                } catch(e) { console.log("Greška sa povlačenjem komentara"); }
 
                 feedContainer.innerHTML = "";
                 
@@ -660,9 +651,9 @@
                         imgHtml = `<img src="${post.slika_url}" class="post-img" alt="Uspomena">`;
                     }
 
-                    // Filtriraj komentare
+                    // Izdvajamo prave tekstualne komentare
                     let komentariHtml = "";
-                    const pripadajuciKomentari = sviKomentari.filter(k => k.poruka_id === post.id);
+                    const pripadajuciKomentari = sveStvari.filter(k => k.poruka_id === post.id && !k.tekst.startsWith("[REAKCIJA]"));
                     pripadajuciKomentari.forEach(k => {
                         komentariHtml += `
                             <div class="comment-item">
@@ -671,24 +662,18 @@
                         `;
                     });
 
-                    // Napredna logika za prebrojavanje reakcija iz nove tabele
-                    const pripadajuceReakcije = sveReakcije.filter(r => r.poruka_id === post.id);
-                    
-                    // Brojimo koliko koji emodži ima glasova (npr: {"❤️": 1, "🔥": 2})
+                    // Izdvajamo reakcije iz tabele komentara i brojimo ih
+                    const pripadajuceReakcije = sveStvari.filter(k => k.poruka_id === post.id && k.tekst.startsWith("[REAKCIJA]"));
                     let brojacEmodzija = {};
-                    let koJeReagovao = {}; // pamti imena za tooltip ili uvid
-
                     pripadajuceReakcije.forEach(r => {
-                        brojacEmodzija[r.emoji] = (brojacEmodzija[r.emoji] || 0) + 1;
-                        if(!koJeReagovao[r.emoji]) koJeReagovao[r.emoji] = [];
-                        koJeReagovao[r.emoji].push(r.autor);
+                        const čistEmodzi = r.tekst.replace("[REAKCIJA]", "").trim();
+                        brojacEmodzija[čistEmodzi] = (brojacEmodzija[čistEmodzi] || 0) + 1;
                     });
 
                     let reakcijeHtml = "";
                     Object.keys(brojacEmodzija).forEach(emoji => {
-                        const imena K = koJeReagovao[emoji].join(', ');
                         reakcijeHtml += `
-                            <span class="reaction-badge" title="${imena}">
+                            <span class="reaction-badge">
                                 ${emoji} ${brojacEmodzija[emoji]}
                             </span>
                         `;
@@ -700,6 +685,7 @@
                             <div class="post-text">${post.tekst}</div>
                             ${imgHtml}
                             
+                            <!-- REAKCIJE -->
                             <div class="reactions-container">
                                 <button class="react-main-btn">❤️ Reaguj</button>
                                 <div class="emoji-popover">
@@ -714,6 +700,7 @@
                                 </div>
                             </div>
 
+                            <!-- KOMENTARI -->
                             <div class="comments-section">
                                 <div class="comments-list">${komentariHtml || '<p style="color:#adb5bd; font-size:12px; font-style:italic;">Nema komentara...</p>'}</div>
                                 <div class="comment-input-box">
@@ -726,7 +713,7 @@
                     feedContainer.innerHTML += postHtml;
                 });
 
-                // Otvaranje popover menija sa emodžijima na klik dugmeta "Reaguj"
+                // Otvaranje menija sa emodžijima
                 document.querySelectorAll('.react-main-btn').forEach(btn => {
                     btn.onclick = function(e) {
                         e.stopPropagation();
@@ -737,17 +724,16 @@
                     };
                 });
 
-                // Zatvaranje menija ako se klikne bilo gde sa strane
                 document.onclick = function() {
                     document.querySelectorAll('.emoji-popover').forEach(p => p.style.display = 'none');
                 };
 
-                // Slanje reakcije u NOVU tabelu
+                // Klik na željeni emodži
                 document.querySelectorAll('.emoji-click').forEach(span => {
                     span.onclick = function() {
                         const emoji = this.getAttribute('data-emoji');
                         const postId = this.closest('.post-card').getAttribute('data-id');
-                        addReaction(postId, emoji);
+                        addReactionAsComment(postId, emoji);
                     };
                 });
 
@@ -769,33 +755,30 @@
             }
         }
 
-        async function addReaction(postId, emoji) {
+        async function addReactionAsComment(postId, emoji) {
             try {
-                // Prvo proveravamo da li si već ostavio/la BAŠ TAJ emodži na TU poruku, da ne dupliramo bezveze
+                // Proveravamo da li si već ostavio/la taj emodži da ga sklonimo ako klikneš ponovo
                 let { data: postojece } = await supabase
-                    .from('reakcije')
+                    .from('komentari')
                     .select('*')
                     .eq('poruka_id', postId)
                     .eq('autor', currentUser)
-                    .eq('emoji', emoji);
+                    .eq('tekst', `[REAKCIJA] ${emoji}`);
 
                 if (postojece && postojece.length > 0) {
-                    // Ako ponovo klikneš na isti emodži, obrisaćemo ga (unreact - baš kao na Instagramu)
                     await supabase
-                        .from('reakcije')
+                        .from('komentari')
                         .delete()
                         .eq('id', postojece[0].id);
                 } else {
-                    // Ako nisi reagovao/la, upisujemo novu reakciju
                     await supabase
-                        .from('reakcije')
+                        .from('komentari')
                         .insert([{
                             poruka_id: postId,
                             autor: currentUser,
-                            emoji: emoji
+                            tekst: `[REAKCIJA] ${emoji}`
                         }]);
                 }
-
                 loadFeed();
             } catch (error) {
                 console.error(error);
