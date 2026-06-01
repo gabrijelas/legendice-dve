@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Naše Mesto ❤️</title>
+    <title> Legendice ❤️</title>
     <style>
         * {
             box-sizing: border-box;
@@ -243,7 +243,7 @@
             </div>
             <div class="poll-option" onclick="selectPoll(this, 'Nisam baš najbolje...')">
                 <input type="radio" name="mood" id="opt3">
-                <label for="opt3">🌧️ Nisam baš najbolje, muci me nesto </label>
+                <label for="opt3">🌧️ Nisam baš najbolje, muci me nesto. </label>
             </div>
 
             <div id="poll-loader" class="loader"></div>
@@ -266,7 +266,7 @@
                 <button class="btn" id="btn-send-post" style="margin-top: 5px; padding: 8px;">Zakači na zid 📌</button>
             </div>
 
-            <h2 style="font-size: 16px; text-align: left; color: #d6336c; margin-bottom: 10px;">Naše uspomene i poruke:</h2>
+            <h2 style="font-size: 16px; text-align: left; color: #d6336c; margin-bottom: 10px;">Uspomene i poruke:</h2>
             <div class="feed-container" id="feed-container"></div>
         </div>
     </div>
@@ -299,13 +299,13 @@
                 const fileName = `gate_${Date.now()}.${fileExt}`;
 
                 let { error: uploadError } = await supabase.storage
-                    .from('zajednicke-slike')
+                    .from('slike')
                     .upload(fileName, file);
 
                 if (uploadError) throw uploadError;
 
                 const { data } = supabase.storage
-                    .from('zajednicke-slike')
+                    .from('slike')
                     .getPublicUrl(fileName);
 
                 uploadedImageUrl = data.publicUrl;
@@ -354,15 +354,15 @@
                     .from('poruke')
                     .insert([{
                         autor: currentUser,
-                        tekst: `Otključao sam naše mesto i danas se osećam: ${selectedMood}`,
+                        tekst: `Danas se osećam: ${selectedMood}`,
                         reakcija: "❤️"
                     }]);
 
-                let sweetComment = "Predivno je što si tu! Pogledaj naš zid. 😍";
+                let sweetComment = "Predivno je što si tu!😍";
                 if (selectedMood.includes('umoran')) {
-                    sweetComment = "Znam da si umoran, zato sam napravila ovo mesto da te malo oraspoložim! Šaljem ti poljubac! 💋";
+                    sweetComment = "Znam da si umoran, šaljem ti poljubac! 💋";
                 } else if (selectedMood.includes('najbolje')) {
-                    sweetComment = "Ooo ne... 💔 Javi mi se odmah, a dotle vidi naše lepe trenutke ovde!";
+                    sweetComment = "Ooo ne... 💔 Javi mi se odmah!";
                 }
                 document.getElementById('sweet-comment').innerText = sweetComment;
 
@@ -396,13 +396,13 @@
                 const fileName = `feed_${Date.now()}.${fileExt}`;
                 
                 let { error: uploadError } = await supabase.storage
-                    .from('zajednicke-slike')
+                    .from('slike')
                     .upload(fileName, file);
 
                 if (uploadError) throw uploadError;
 
                 const { data } = supabase.storage
-                    .from('zajednicke-slike')
+                    .from('slike')
                     .getPublicUrl(fileName);
 
                 feedFileUrl = data.publicUrl;
