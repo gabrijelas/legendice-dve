@@ -274,7 +274,7 @@
         import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
         const SUPABASE_URL = "https://qboyewrrbravcruiciyf.supabase.co"; 
-        const SUPABASE_ANON_KEY = "sb_publishable_Zfi8B4da_0fY9xgbwAosDA_uvyx_7t7rZ7iE8A7I3q7wB"; 
+        const SUPABASE_ANON_KEY = "sb_publishable_gXVaT44-yWm0G6z1N8MzBg_f2FDhPFD"; 
 
         const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -341,7 +341,6 @@
             btnSubmit.style.opacity = "1";
         }
 
-        // Povezivanje klikova na opcije ankete unutar modula
         document.getElementById('opt1-box').onclick = function() { selectPoll(this, 'Odlično, jedva čekam da te vidim!'); };
         document.getElementById('opt2-box').onclick = function() { selectPoll(this, 'Onako, malo sam umoran.'); };
         document.getElementById('opt3-box').onclick = function() { selectPoll(this, 'Nisam baš najbolje...'); };
@@ -483,7 +482,6 @@
                     feedContainer.innerHTML += postHtml;
                 });
 
-                // Postavljanje klikova na dugmad za reakcije
                 document.querySelectorAll('.react-btn').forEach(btn => {
                     btn.onclick = function() {
                         const id = this.getAttribute('data-id');
