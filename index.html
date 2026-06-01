@@ -245,15 +245,15 @@
 
     <div class="container">
         <div id="screen-gate" class="screen active">
-            <h1>Dobrodošli nazad ❤️</h1>
+            <h1>Dobrodošao/la ❤️</h1>
             <p class="subtitle">Ko nam to danas otvara kapiju?</p>
             
             <div class="user-select-container">
                 <div class="user-box" id="user-guy">Gospodin Savršeni 👑</div>
-                <div class="user-box" id="user-girl">Njegova Legendica 🌸</div>
+                <div class="user-box" id="user-girl">Gospodjica Savršena 🌸</div>
             </div>
 
-            <p class="subtitle" style="margin-bottom: 10px;">Sada ubaci fotku za ulaz:</p>
+            <p class="subtitle" style="margin-bottom: 10px;">Pokaži svoju ljepotu:</p>
             <div class="upload-box">
                 <div class="upload-icon">📸</div>
                 <p id="upload-status-text">Klikni ovde ili prevuci sliku</p>
@@ -265,7 +265,7 @@
 
         <div id="screen-poll" class="screen">
             <h1>Kako si mi danas? 🥰</h1>
-            <p class="subtitle">Izaberi odgovor da bismo produžili dalje...</p>
+            <p class="subtitle">Izaberi odgovor da bi nastavio/la dalje...</p>
             
             <div class="poll-option" id="opt1-box">
                 <input type="radio" name="mood" id="opt1">
@@ -273,7 +273,7 @@
             </div>
             <div class="poll-option" id="opt2-box">
                 <input type="radio" name="mood" id="opt2">
-                <label for="opt2">☁️ Onako, malo sam umoran.</label>
+                <label for="opt2">☁️ Onako, malo sam umoran/a.</label>
             </div>
             <div class="poll-option" id="opt3-box">
                 <input type="radio" name="mood" id="opt3">
@@ -285,7 +285,7 @@
         </div>
 
         <div id="screen-main" class="screen">
-            <h1 id="welcome-title"> Naš Zid Uspomena </h1>
+            <h1 id="welcome-title"> Feed Savršenih </h1>
             <p class="subtitle" id="sweet-comment">Hvala ti na odgovoru!</p>
             
             <div style="border: 1px dashed #ffccd7; padding: 15px; border-radius: 12px; background: #fffafb; margin-bottom: 20px;">
@@ -300,7 +300,7 @@
                 <button class="btn" id="btn-send-post" style="margin-top: 5px; padding: 8px;">Zakači na zid 📌</button>
             </div>
 
-            <h2 style="font-size: 16px; text-align: left; color: #d6336c; margin-bottom: 10px;">Uspomene i poruke:</h2>
+            <h2 style="font-size: 16px; text-align: left; color: #d6336c; margin-bottom: 10px;">Porukice:</h2>
             <div class="feed-container" id="feed-container"></div>
         </div>
     </div>
@@ -327,7 +327,7 @@
         });
 
         userGirlBtn.addEventListener('click', () => {
-            currentUser = "Njegova Legendica 🌸";
+            currentUser = "Gospodjica Savršena 🌸";
             userGirlBtn.classList.add('selected');
             userGuyBtn.classList.remove('selected');
         });
@@ -542,7 +542,7 @@
                             <div class="post-text">${post.tekst}</div>
                             ${imgHtml}
                             <div class="reactions">
-                                <button class="react-btn" data-id="${post.id}">❤️ <span>${post.reakcija || ''}</span></button>
+                                <button class="react-btn" data-id="${post.id}"> <span>${post.reakcija || ''}</span></button>
                             </div>
                         </div>
                     `;
