@@ -100,7 +100,6 @@
             margin-bottom: 10px;
         }
 
-        /* Novi stilovi za izbor korisnika */
         .user-select-container {
             display: flex;
             gap: 15px;
@@ -118,12 +117,14 @@
             font-weight: 600;
             transition: all 0.2s;
             font-size: 14px;
+            color: #4a3b40;
         }
 
+        /* Kada je korisnik selektovan, kutija postaje roze sa belim tekstom */
         .user-box.selected {
-            background: #ff85a2;
-            color: white;
-            border-color: #d6336c;
+            background: #d6336c !important;
+            color: white !important;
+            border-color: #c2255c !important;
         }
 
         .poll-option {
@@ -243,7 +244,6 @@
 <body>
 
     <div class="container">
-        <!-- KAPIJA SA IZBOROM KORISNIKA -->
         <div id="screen-gate" class="screen active">
             <h1>Dobrodošli nazad ❤️</h1>
             <p class="subtitle">Ko nam to danas otvara kapiju?</p>
@@ -263,7 +263,6 @@
             <button class="btn" id="btn-gate-next" style="display: none;">Otvori kapiju ✨</button>
         </div>
 
-        <!-- ANKETA -->
         <div id="screen-poll" class="screen">
             <h1>Kako si mi danas? 🥰</h1>
             <p class="subtitle">Izaberi odgovor da bismo produžili dalje...</p>
@@ -285,7 +284,6 @@
             <button class="btn" id="btn-poll-submit" disabled style="opacity: 0.5;">Pošalji odgovor 💌</button>
         </div>
 
-        <!-- GLAVNI EKRAN (ZID) -->
         <div id="screen-main" class="screen">
             <h1 id="welcome-title"> Naš Zid Uspomena </h1>
             <p class="subtitle" id="sweet-comment">Hvala ti na odgovoru!</p>
@@ -317,9 +315,8 @@
 
         let selectedMood = "";
         let uploadedImageUrl = "";
-        let currentUser = ""; // Dinamički se menja na osnovu klika
+        let currentUser = ""; 
 
-        // Biranje korisnika na kapiji
         const userGuyBtn = document.getElementById('user-guy');
         const userGirlBtn = document.getElementById('user-girl');
 
@@ -350,8 +347,9 @@
                 return;
             }
 
-            uploadStatusText.innerText = `Učitavam: ${file.name}...`;
+            uploadStatusText.innerText = `Učitavam sliku u bazu... ⏳`;
             gateLoader.style.display = "block";
+            btnGateNext.style.display = "none";
 
             try {
                 const fileExt = file.name.split('.').pop();
@@ -409,12 +407,10 @@
             pollLoader.style.display = "block";
 
             try {
-                // Beležimo ko je odgovorio na anketu (koristimo vašu ulogu kao odgovor ili u tabeli)
                 await supabase
                     .from('anketa')
                     .insert([{ odgovor: `${currentUser}: ${selectedMood}` }]);
 
-                // Beležimo prvu sliku pod pravim imenom na zid
                 await supabase
                     .from('poruke')
                     .insert([{
@@ -436,7 +432,6 @@
 
                 pollLoader.style.display = "none";
                 document.getElementById('screen-poll').classList.remove('active');
-                document.getElementById('screen-main').classList.add('add');
                 document.getElementById('screen-main').classList.add('active');
                 
                 loadFeed();
@@ -493,7 +488,6 @@
             }
 
             try {
-                // Šaljemo poruku pod pravim imenom koje je izabrano na početku
                 await supabase
                     .from('poruke')
                     .insert([{
