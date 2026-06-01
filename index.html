@@ -145,9 +145,11 @@
         .post-img {
             width: 100%;
             border-radius: 10px;
+            margin-top: 10px;
             margin-bottom: 10px;
             max-height: 250px;
             object-fit: cover;
+            display: block;
         }
 
         .post-meta {
@@ -359,7 +361,8 @@
                     .insert([{
                         autor: currentUser,
                         tekst: `Danas se osećam: ${selectedMood}`,
-                        reakcija: "❤️"
+                        reakcija: "❤️",
+                        slika_url: uploadedImageUrl // Povezujemo početnu sliku sa ovom porukom!
                     }]);
 
                 let sweetComment = "Predivno je što si tu!😍";
@@ -428,12 +431,14 @@
             }
 
             try {
+                // Šaljemo i tekst i sliku ako postoji u tabelu poruke
                 await supabase
                     .from('poruke')
                     .insert([{
                         autor: currentUser,
                         tekst: text,
-                        reakcija: ""
+                        reakcija: "",
+                        slika_url: feedFileUrl 
                     }]);
 
                 textInput.value = "";
@@ -470,10 +475,17 @@
                 poruke.forEach(post => {
                     const date = new Date(post.created_at).toLocaleString('sr-RS', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' });
                     
+                    // Logika: ako poruka ima sliku u bazi, prikaži je!
+                    let imgHtml = "";
+                    if (post.slika_url) {
+                        imgHtml = `<img src="${post.slika_url}" class="post-img" alt="Uspomena">`;
+                    }
+
                     let postHtml = `
                         <div class="post-card">
                             <div class="post-meta">✏️ <strong>${post.autor}</strong> • ${date}</div>
                             <div class="post-text">${post.tekst}</div>
+                            ${imgHtml}
                             <div class="reactions">
                                 <button class="react-btn" data-id="${post.id}">❤️ <span>${post.reakcija || ''}</span></button>
                             </div>
@@ -482,6 +494,7 @@
                     feedContainer.innerHTML += postHtml;
                 });
 
+                // Ručno vezivanje klikova za reakcije unutar modula
                 document.querySelectorAll('.react-btn').forEach(btn => {
                     btn.onclick = function() {
                         const id = this.getAttribute('data-id');
