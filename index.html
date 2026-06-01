@@ -211,7 +211,7 @@
             100% { transform: rotate(360deg); }
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -233,15 +233,15 @@
             <h1>Kako si mi danas? 🥰</h1>
             <p class="subtitle">Izaberi odgovor da bismo produžili dalje...</p>
             
-            <div class="poll-option" onclick="selectPoll(this, 'Odlično, jedva čekam da te vidim!')">
+            <div class="poll-option" id="opt1-box">
                 <input type="radio" name="mood" id="opt1">
                 <label for="opt1">☀️ Odlično, sve je top!</label>
             </div>
-            <div class="poll-option" onclick="selectPoll(this, 'Onako, malo sam umoran.')">
+            <div class="poll-option" id="opt2-box">
                 <input type="radio" name="mood" id="opt2">
                 <label for="opt2">☁️ Onako, malo sam umoran.</label>
             </div>
-            <div class="poll-option" onclick="selectPoll(this, 'Nisam baš najbolje...')">
+            <div class="poll-option" id="opt3-box">
                 <input type="radio" name="mood" id="opt3">
                 <label for="opt3">🌧️ Nisam baš najbolje, muci me nesto. </label>
             </div>
@@ -272,231 +272,250 @@
     </div>
 
     <script>
-        // --- KONFIGURACIJA SUPABASE ---
-        const SUPABASE_URL = "https://qboyewrrbravcruiciyf.supabase.co"; 
-        const SUPABASE_ANON_KEY = "sb_secret_JMNyx8dkBZsCSh7f1T7lYA_FVH71Imi"; 
+        // Čekamo da se ceo sajt i sve biblioteke učitaju 100% pre nego što pokrenemo kod
+        window.onload = function() {
+            const SUPABASE_URL = "https://qboyewrrbravcruiciyf.supabase.co"; 
+            const SUPABASE_ANON_KEY = "sb_secret_JMNyx8dkBZsCSh7f1T7lYA_FVH71Imi"; 
 
-        // Promenili smo ime ovde da pretraživač ne može da ga pomeša sa eksternom bibliotekom
-        const mojSupabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        let selectedMood = "";
-        let uploadedImageUrl = "";
-        let currentUser = "Dečko"; 
-
-        const gateFileInput = document.getElementById('gate-file-input');
-        const uploadStatusText = document.getElementById('upload-status-text');
-        const btnGateNext = document.getElementById('btn-gate-next');
-        const gateLoader = document.getElementById('gate-loader');
-
-        gateFileInput.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            uploadStatusText.innerText = `Učitavam: ${file.name}...`;
-            gateLoader.style.display = "block";
-
-            try {
-                const fileExt = file.name.split('.').pop();
-                const fileName = `gate_${Date.now()}.${fileExt}`;
-
-                let { error: uploadError } = await mojSupabase.storage
-                    .from('slike')
-                    .upload(fileName, file);
-
-                if (uploadError) throw uploadError;
-
-                const { data } = mojSupabase.storage
-                    .from('slike')
-                    .getPublicUrl(fileName);
-
-                uploadedImageUrl = data.publicUrl;
-
-                uploadStatusText.innerText = "Slika uspešno ubačena! 🥰";
-                gateLoader.style.display = "none";
-                btnGateNext.style.display = "block";
-
-            } catch (error) {
-                console.error(error);
-                uploadStatusText.innerText = "Greška pri uploadu. Pokušaj ponovo.";
-                gateLoader.style.display = "none";
-            }
-        });
-
-        btnGateNext.addEventListener('click', () => {
-            document.getElementById('screen-gate').classList.remove('active');
-            document.getElementById('screen-poll').classList.add('active');
-        });
-
-        function selectPoll(element, mood) {
-            selectedMood = mood;
-            document.querySelectorAll('.poll-option').forEach(opt => {
-                opt.style.background = "#fff5f7";
-                opt.style.borderColor = "#ffccd7";
-            });
-            element.style.background = "#ffe3e8";
-            element.style.borderColor = "#ff85a2";
-            element.querySelector('input').checked = true;
-
-            const btnSubmit = document.getElementById('btn-poll-submit');
-            btnSubmit.disabled = false;
-            btnSubmit.style.opacity = "1";
-        }
-
-        document.getElementById('btn-poll-submit').addEventListener('click', async () => {
-            const pollLoader = document.getElementById('poll-loader');
-            pollLoader.style.display = "block";
-
-            try {
-                await mojSupabase
-                    .from('anketa')
-                    .insert([{ odgovor: selectedMood }]);
-
-                await mojSupabase
-                    .from('poruke')
-                    .insert([{
-                        autor: currentUser,
-                        tekst: `Danas se osećam: ${selectedMood}`,
-                        reakcija: "❤️"
-                    }]);
-
-                let sweetComment = "Predivno je što si tu!😍";
-                if (selectedMood.includes('umoran')) {
-                    sweetComment = "Znam da si umoran, šaljem ti poljubac! 💋";
-                } else if (selectedMood.includes('najbolje')) {
-                    sweetComment = "Ooo ne... 💔 Javi mi se odmah!";
-                }
-                document.getElementById('sweet-comment').innerText = sweetComment;
-
-                pollLoader.style.display = "none";
-                document.getElementById('screen-poll').classList.remove('active');
-                document.getElementById('screen-main').classList.add('active');
-                
-                loadFeed();
-
-            } catch (error) {
-                console.error(error);
-                alert("Došlo je do greške.");
-                pollLoader.style.display = "none";
-            }
-        });
-
-        let feedFileUrl = "";
-        const feedFileInput = document.getElementById('feed-file-input');
-        const feedUploadStatus = document.getElementById('feed-upload-status');
-        const feedLoader = document.getElementById('feed-loader');
-
-        feedFileInput.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            feedUploadStatus.innerText = "Učitavanje slike...";
-            feedLoader.style.display = "block";
-
-            try {
-                const fileExt = file.name.split('.').pop();
-                const fileName = `feed_${Date.now()}.${fileExt}`;
-                
-                let { error: uploadError } = await mojSupabase.storage
-                    .from('slike')
-                    .upload(fileName, file);
-
-                if (uploadError) throw uploadError;
-
-                const { data } = mojSupabase.storage
-                    .from('slike')
-                    .getPublicUrl(fileName);
-
-                feedFileUrl = data.publicUrl;
-                feedUploadStatus.innerText = "Slika spremna za kačenje! 📸";
-                feedLoader.style.display = "none";
-            } catch (error) {
-                console.error(error);
-                feedLoader.style.display = "none";
-            }
-        });
-
-        document.getElementById('btn-send-post').addEventListener('click', async () => {
-            const textInput = document.getElementById('post-text-input');
-            const text = textInput.value.trim();
-
-            if (!text && !feedFileUrl) {
-                alert("Napiši neku poruku ili ubaci sliku!");
+            if (typeof supabase === 'undefined' && typeof Supabase !== 'undefined') {
+                window.supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            } else if (typeof supabase !== 'undefined') {
+                // Ako je već kreiran, koristimo njega
+            } else {
+                alert("Greška: Supabase biblioteka nije učitana. Osvežite stranicu.");
                 return;
             }
 
-            try {
-                await mojSupabase
-                    .from('poruke')
-                    .insert([{
-                        autor: currentUser,
-                        tekst: text,
-                        reakcija: ""
-                    }]);
+            let selectedMood = "";
+            let uploadedImageUrl = "";
+            let currentUser = "Dečko"; 
 
-                textInput.value = "";
-                feedFileUrl = "";
-                feedUploadStatus.innerText = "Dodaj i sliku (opciono) 📷";
+            const gateFileInput = document.getElementById('gate-file-input');
+            const uploadStatusText = document.getElementById('upload-status-text');
+            const btnGateNext = document.getElementById('btn-gate-next');
+            const gateLoader = document.getElementById('gate-loader');
 
-                loadFeed();
+            gateFileInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
 
-            } catch (error) {
-                console.error(error);
-                alert("Greška pri slanju.");
+                uploadStatusText.innerText = `Učitavam: ${file.name}...`;
+                gateLoader.style.display = "block";
+
+                try {
+                    const fileExt = file.name.split('.').pop();
+                    const fileName = `gate_${Date.now()}.${fileExt}`;
+
+                    let { error: uploadError } = await supabase.storage
+                        .from('slike')
+                        .upload(fileName, file);
+
+                    if (uploadError) throw uploadError;
+
+                    const { data } = supabase.storage
+                        .from('slike')
+                        .getPublicUrl(fileName);
+
+                    uploadedImageUrl = data.publicUrl;
+
+                    uploadStatusText.innerText = "Slika uspešno ubačena! 🥰";
+                    gateLoader.style.display = "none";
+                    btnGateNext.style.display = "block";
+
+                } catch (error) {
+                    console.error(error);
+                    uploadStatusText.innerText = "Greška pri uploadu. Pokušaj ponovo.";
+                    gateLoader.style.display = "none";
+                }
+            });
+
+            btnGateNext.addEventListener('click', () => {
+                document.getElementById('screen-gate').classList.remove('active');
+                document.getElementById('screen-poll').classList.add('active');
+            });
+
+            function selectPoll(element, mood) {
+                selectedMood = mood;
+                document.querySelectorAll('.poll-option').forEach(opt => {
+                    opt.style.background = "#fff5f7";
+                    opt.style.borderColor = "#ffccd7";
+                });
+                element.style.background = "#ffe3e8";
+                element.style.borderColor = "#ff85a2";
+                element.querySelector('input').checked = true;
+
+                const btnSubmit = document.getElementById('btn-poll-submit');
+                btnSubmit.disabled = false;
+                btnSubmit.style.opacity = "1";
             }
-        });
 
-        async function loadFeed() {
-            const feedContainer = document.getElementById('feed-container');
-            feedContainer.innerHTML = "<p style='color:#adb5bd;'>Učitavam zid...</p>";
+            document.getElementById('opt1-box').onclick = function() { selectPoll(this, 'Odlično, jedva čekam da te vidim!'); };
+            document.getElementById('opt2-box').onclick = function() { selectPoll(this, 'Onako, malo sam umoran.'); };
+            document.getElementById('opt3-box').onclick = function() { selectPoll(this, 'Nisam baš najbolje...'); };
 
-            try {
-                let { data: poruke, error } = await mojSupabase
-                    .from('poruke')
-                    .select('*')
-                    .order('created_at', { ascending: false });
+            document.getElementById('btn-poll-submit').addEventListener('click', async () => {
+                const pollLoader = document.getElementById('poll-loader');
+                pollLoader.style.display = "block";
 
-                if (error) throw error;
+                try {
+                    await supabase
+                        .from('anketa')
+                        .insert([{ odgovor: selectedMood }]);
 
-                feedContainer.innerHTML = "";
-                
-                if (poruke.length === 0) {
-                    feedContainer.innerHTML = "<p style='color:#adb5bd;'>Zid je prazan. Napišite nešto!</p>";
+                    await supabase
+                        .from('poruke')
+                        .insert([{
+                            autor: currentUser,
+                            tekst: `Danas se osećam: ${selectedMood}`,
+                            reakcija: "❤️"
+                        }]);
+
+                    let sweetComment = "Predivno je što si tu!😍";
+                    if (selectedMood.includes('umoran')) {
+                        sweetComment = "Znam da si umoran, šaljem ti poljubac! 💋";
+                    } else if (selectedMood.includes('najbolje')) {
+                        sweetComment = "Ooo ne... 💔 Javi mi se odmah!";
+                    }
+                    document.getElementById('sweet-comment').innerText = sweetComment;
+
+                    pollLoader.style.display = "none";
+                    document.getElementById('screen-poll').classList.remove('active');
+                    document.getElementById('screen-main').classList.add('active');
+                    
+                    loadFeed();
+
+                } catch (error) {
+                    console.error(error);
+                    alert("Došlo je do greške.");
+                    pollLoader.style.display = "none";
+                }
+            });
+
+            let feedFileUrl = "";
+            const feedFileInput = document.getElementById('feed-file-input');
+            const feedUploadStatus = document.getElementById('feed-upload-status');
+            const feedLoader = document.getElementById('feed-loader');
+
+            feedFileInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                feedUploadStatus.innerText = "Učitavanje slike...";
+                feedLoader.style.display = "block";
+
+                try {
+                    const fileExt = file.name.split('.').pop();
+                    const fileName = `feed_${Date.now()}.${fileExt}`;
+                    
+                    let { error: uploadError } = await supabase.storage
+                        .from('slike')
+                        .upload(fileName, file);
+
+                    if (uploadError) throw uploadError;
+
+                    const { data } = supabase.storage
+                        .from('slike')
+                        .getPublicUrl(fileName);
+
+                    feedFileUrl = data.publicUrl;
+                    feedUploadStatus.innerText = "Slika spremna za kačenje! 📸";
+                    feedLoader.style.display = "none";
+                } catch (error) {
+                    console.error(error);
+                    feedLoader.style.display = "none";
+                }
+            });
+
+            document.getElementById('btn-send-post').addEventListener('click', async () => {
+                const textInput = document.getElementById('post-text-input');
+                const text = textInput.value.trim();
+
+                if (!text && !feedFileUrl) {
+                    alert("Napiši neku poruku ili ubaci sliku!");
                     return;
                 }
 
-                poruke.forEach(post => {
-                    const date = new Date(post.created_at).toLocaleString('sr-RS', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' });
+                try {
+                    await supabase
+                        .from('poruke')
+                        .insert([{
+                            autor: currentUser,
+                            tekst: text,
+                            reakcija: ""
+                        }]);
+
+                    textInput.value = "";
+                    feedFileUrl = "";
+                    feedUploadStatus.innerText = "Dodaj i sliku (opciono) 📷";
+
+                    loadFeed();
+
+                } catch (error) {
+                    console.error(error);
+                    alert("Greška pri slanju.");
+                }
+            });
+
+            async function loadFeed() {
+                const feedContainer = document.getElementById('feed-container');
+                feedContainer.innerHTML = "<p style='color:#adb5bd;'>Učitavam zid...</p>";
+
+                try {
+                    let { data: poruke, error } = await supabase
+                        .from('poruke')
+                        .select('*')
+                        .order('created_at', { ascending: false });
+
+                    if (error) throw error;
+
+                    feedContainer.innerHTML = "";
                     
-                    let postHtml = `
-                        <div class="post-card">
-                            <div class="post-meta">✏️ <strong>${post.autor}</strong> • ${date}</div>
-                            <div class="post-text">${post.tekst}</div>
-                            <div class="reactions">
-                                <button class="react-btn" onclick="addReaction(${post.id}, '❤️')">❤️ <span>${post.reakcija || ''}</span></button>
+                    if (poruke.length === 0) {
+                        feedContainer.innerHTML = "<p style='color:#adb5bd;'>Zid je prazan. Napišite nešto!</p>";
+                        return;
+                    }
+
+                    poruke.forEach(post => {
+                        const date = new Date(post.created_at).toLocaleString('sr-RS', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' });
+                        
+                        let postHtml = `
+                            <div class="post-card">
+                                <div class="post-meta">✏️ <strong>${post.autor}</strong> • ${date}</div>
+                                <div class="post-text">${post.tekst}</div>
+                                <div class="reactions">
+                                    <button class="react-btn" data-id="${post.id}">❤️ <span>${post.reakcija || ''}</span></button>
+                                </div>
                             </div>
-                        </div>
-                    `;
-                    feedContainer.innerHTML += postHtml;
-                });
+                        `;
+                        feedContainer.innerHTML += postHtml;
+                    });
 
-            } catch (error) {
-                console.error(error);
-                feedContainer.innerHTML = "<p style='color:red;'>Greška pri učitavanju.</p>";
+                    document.querySelectorAll('.react-btn').forEach(btn => {
+                        btn.onclick = function() {
+                            const id = this.getAttribute('data-id');
+                            addReaction(id, '❤️');
+                        };
+                    });
+
+                } catch (error) {
+                    console.error(error);
+                    feedContainer.innerHTML = "<p style='color:red;'>Greška pri učitavanju.</p>";
+                }
             }
-        }
 
-        async function addReaction(postId, emoji) {
-            try {
-                await mojSupabase
-                    .from('poruke')
-                    .update({ reakcija: emoji })
-                    .eq('id', postId);
+            async function addReaction(postId, emoji) {
+                try {
+                    await supabase
+                        .from('poruke')
+                        .update({ reakcija: emoji })
+                        .eq('id', postId);
 
-                loadFeed();
-            } catch (error) {
-                console.error(error);
+                    loadFeed();
+                } catch (error) {
+                    console.error(error);
+                }
             }
-        }
+        };
     </script>
 </body>
 </html>
