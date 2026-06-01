@@ -236,10 +236,13 @@
         }
 
         .active-reactions {
-            font-size: 13px;
-            color: #d6336c;
+            font-size: 15px;
             margin-top: 5px;
-            font-style: italic;
+            background: #fff5f7;
+            padding: 3px 8px;
+            border-radius: 12px;
+            display: inline-block;
+            border: 1px solid #ffe3e8;
         }
 
         /* Sekcija za komentare */
@@ -609,7 +612,6 @@
             feedContainer.innerHTML = "<p style='color:#adb5bd;'>Učitavam zid...</p>";
 
             try {
-                // Povlačimo poruke
                 let { data: poruke, error: errorPoruke } = await supabase
                     .from('poruke')
                     .select('*')
@@ -617,7 +619,6 @@
 
                 if (errorPoruke) throw errorPoruke;
 
-                // Povlačimo sve komentare
                 let { data: sviKomentari, error: errorKomentari } = await supabase
                     .from('komentari')
                     .select('*')
@@ -640,7 +641,6 @@
                         imgHtml = `<img src="${post.slika_url}" class="post-img" alt="Uspomena">`;
                     }
 
-                    // Filtriramo komentare za ovu objavu
                     let komentariHtml = "";
                     const pripadajuciKomentari = sviKomentari.filter(k => k.poruka_id === post.id);
                     
@@ -652,7 +652,8 @@
                         `;
                     });
 
-                    let prikazReakcije = post.reakcija ? `<div class="active-reactions">${post.reakcija}</div>` : '';
+                    // Prikazujemo samo emodži, prelepo i čisto
+                    let prikazReakcije = post.reakcija ? `<div class="active-reactions">Oznaka: ${post.reakcija}</div>` : '';
 
                     let postHtml = `
                         <div class="post-card" data-id="${post.id}">
@@ -686,7 +687,6 @@
                     feedContainer.innerHTML += postHtml;
                 });
 
-                // Otvaranje menija sa emodžijima na klik
                 document.querySelectorAll('.react-main-btn').forEach(btn => {
                     btn.onclick = function(e) {
                         e.stopPropagation();
@@ -697,12 +697,10 @@
                     };
                 });
 
-                // Zatvaranje menija ako se klikne sa strane
                 document.onclick = function() {
                     document.querySelectorAll('.emoji-popover').forEach(p => p.style.display = 'none');
                 };
 
-                // Slanje reakcije u bazu
                 document.querySelectorAll('.emoji-click').forEach(span => {
                     span.onclick = function() {
                         const emoji = this.getAttribute('data-emoji');
@@ -711,7 +709,6 @@
                     };
                 });
 
-                // Slanje komentara u bazu
                 document.querySelectorAll('.comment-submit-btn').forEach(btn => {
                     btn.onclick = function() {
                         const input = this.previousElementSibling;
@@ -731,10 +728,10 @@
 
         async function addReaction(postId, emoji) {
             try {
-                const tekstReakcije = `${currentUser}: ${emoji}`;
+                // Šaljemo samo čist emodži u bazu da ne prepunimo limit karaktera kolone
                 await supabase
                     .from('poruke')
-                    .update({ reakcija: tekstReakcije })
+                    .update({ reakcija: emoji })
                     .eq('id', postId);
 
                 loadFeed();
