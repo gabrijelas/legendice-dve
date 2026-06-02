@@ -203,7 +203,7 @@
             position: relative;
             width: 100%;
             height: 0;
-            padding-bottom: 56.25%; /* 16:9 Odnos stranica za YouTube */
+            padding-bottom: 56.25%; 
             margin-top: 8px;
             border-radius: 10px;
             overflow: hidden;
@@ -383,7 +383,6 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* NOVI STILOVI ZA TABOVE */
         .tabs-nav {
             display: flex;
             border-bottom: 2px solid #ffccd7;
@@ -417,6 +416,11 @@
         .tab-content.active {
             display: block;
         }
+
+        /* Sekcija za sakrivanje i prikaz elemenata na kapiji */
+        #gate-interactive-zone {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -431,14 +435,18 @@
                 <div class="user-box" id="user-girl">Gospodjica Savršena 🌸</div>
             </div>
 
-            <p class="subtitle" style="margin-bottom: 10px;">Pokaži svoju ljepotu:</p>
-            <div class="upload-box">
-                <div class="upload-icon">📸</div>
-                <p id="upload-status-text">Klikni ovde ili prevuci sliku</p>
-                <input type="file" id="gate-file-input" accept="image/*">
+            <div id="gate-check-loader" class="loader"></div>
+
+            <div id="gate-interactive-zone">
+                <p class="subtitle" style="margin-bottom: 10px;">Pokaži svoju ljepotu:</p>
+                <div class="upload-box">
+                    <div class="upload-icon">📸</div>
+                    <p id="upload-status-text">Klikni ovde ili prevuci sliku</p>
+                    <input type="file" id="gate-file-input" accept="image/*">
+                </div>
+                <div id="gate-loader" class="loader"></div>
+                <button class="btn" id="btn-gate-next" style="display: none;">Otvori kapiju ✨</button>
             </div>
-            <div id="gate-loader" class="loader"></div>
-            <button class="btn" id="btn-gate-next" style="display: none;">Otvori kapiju ✨</button>
         </div>
 
         <div id="screen-poll" class="screen">
@@ -464,7 +472,7 @@
 
         <div id="screen-main" class="screen">
             <h1 id="welcome-title"> Feed Savršenih </h1>
-            <p class="subtitle" id="sweet-comment">Hvala ti na odgovoru!</p>
+            <p class="subtitle" id="sweet-comment">Divno je što te vidim opet! 😍</p>
             
             <div class="music-box" id="music-box-container" style="display: none;">
                 <div class="music-title">🎵 Naša pjesma dana:</div>
@@ -512,20 +520,71 @@
         let uploadedImageUrl = "";
         let currentUser = ""; 
 
-        // Biranje korisnika
         const userGuyBtn = document.getElementById('user-guy');
         const userGirlBtn = document.getElementById('user-girl');
+        const gateCheckLoader = document.getElementById('gate-check-loader');
+        const gateInteractiveZone = document.getElementById('gate-interactive-zone');
+
+        // Funkcija koja provjerava kada je izabrani korisnik poslednji put unio post/otvorio kapiju
+        async function checkLastEntryTime(user) {
+            gateCheckLoader.style.display = "block";
+            gateInteractiveZone.style.display = "none";
+            document.getElementById('btn-gate-next').style.display = "none";
+
+            try {
+                // Tražimo poslednju poruku ovog korisnika na zidu
+                let { data: poruke, error } = await supabase
+                    .from('poruke')
+                    .select('created_at')
+                    .eq('autor', user)
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+
+                if (error) throw error;
+
+                if (poruke && poruke.length > 0) {
+                    const lastPostTime = new Date(poruke[0].created_at);
+                    const now = new Date();
+                    
+                    // Razlika u milisekundama pretvorena u sate
+                    const diffInHours = (now - lastPostTime) / (1000 * 60 * 60);
+
+                    // AKO JE PROŠLO MANJE OD 5 SATI -> BINGO, ULAZI DIREKTNO!
+                    if (diffInHours < 5) {
+                        gateCheckLoader.style.display = "none";
+                        
+                        // Direktno preskačemo kapiju i anketu i idemo na glavni ekran
+                        document.getElementById('posting-as-label').innerText = `Pišeš kao: ${currentUser}`;
+                        document.getElementById('screen-gate').classList.remove('active');
+                        document.getElementById('screen-main').classList.add('active');
+                        loadFeed();
+                        return;
+                    }
+                }
+
+                // Ako je prošlo više od 5 sati (ili nema objava), otvara se sekcija za sliku
+                gateCheckLoader.style.display = "none";
+                gateInteractiveZone.style.display = "block";
+
+            } catch (err) {
+                console.error("Greška pri provjeri vremena:", err);
+                gateCheckLoader.style.display = "none";
+                gateInteractiveZone.style.display = "block";
+            }
+        }
 
         userGuyBtn.addEventListener('click', () => {
             currentUser = "Gospodin Savršeni 👑";
             userGuyBtn.classList.add('selected');
             userGirlBtn.classList.remove('selected');
+            checkLastEntryTime(currentUser);
         });
 
         userGirlBtn.addEventListener('click', () => {
             currentUser = "Gospodjica Savršena 🌸";
             userGirlBtn.classList.add('selected');
             userGuyBtn.classList.remove('selected');
+            checkLastEntryTime(currentUser);
         });
 
         // Upload slike na kapiji
@@ -692,7 +751,7 @@
             return (match && match[2].length === 11) ? match[2] : null;
         }
 
-        // Slanje posta (Zid ili Pjesma)
+        // Slanje posta
         document.getElementById('btn-send-post').addEventListener('click', async () => {
             const textInput = document.getElementById('post-text-input');
             const ytInput = document.getElementById('post-youtube-input');
@@ -706,7 +765,6 @@
             }
 
             try {
-                // Ako je unijet YouTube link, šaljemo u tabelu 'pjesme'
                 if (ytUrl) {
                     const ytId = extractYoutubeId(ytUrl);
                     if (ytId) {
@@ -722,7 +780,6 @@
                         return;
                     }
                 } else {
-                    // Inače ide kao standardna poruka na zid
                     await supabase
                         .from('poruke')
                         .insert([{
@@ -747,7 +804,7 @@
             }
         });
 
-        // LOGIKA ZA PROMJENU TABOVA
+        // Logika za promjenu tabova
         const tabBtnPosts = document.getElementById('tab-btn-posts');
         const tabBtnMusic = document.getElementById('tab-btn-music');
         const tabPostsContent = document.getElementById('tab-posts-content');
@@ -767,7 +824,7 @@
             tabPostsContent.classList.remove('active');
         });
 
-        // PREUZIMANJE FEED-A I PLEJLISTE
+        // Preuzimanje feed-a i plejliste
         async function loadFeed() {
             const feedContainer = document.getElementById('feed-container');
             const playlistContainer = document.getElementById('playlist-container');
@@ -776,7 +833,6 @@
             playlistContainer.innerHTML = "<p style='color:#adb5bd;'>Učitavam plejlistu...</p>";
 
             try {
-                // 1. Povuci poruke za zid
                 let { data: poruke, error: errorPoruke } = await supabase
                     .from('poruke')
                     .select('*')
@@ -784,7 +840,6 @@
 
                 if (errorPoruke) throw errorPoruke;
 
-                // 2. Povuci nove pjesme iz tabele 'pjesme'
                 let { data: pjesme, error: errorPjesme } = await supabase
                     .from('pjesme')
                     .select('*')
@@ -792,7 +847,6 @@
 
                 if (errorPjesme) throw errorPjesme;
 
-                // 3. Povuci sve komentare i reakcije
                 let sveStvari = [];
                 try {
                     let { data: komData } = await supabase
@@ -802,7 +856,6 @@
                     if (komData) sveStvari = komData;
                 } catch(e) { console.log("Greška sa povlačenjem komentara"); }
 
-                // --- MUZIČKA KUTIJA (NAJNOVIJA PJESMA NA VRHU) ---
                 const musicBox = document.getElementById('music-box-container');
                 const musicMeta = document.getElementById('music-box-meta');
                 const musicIframeZone = document.getElementById('music-iframe-zone');
@@ -816,7 +869,6 @@
                     musicBox.style.display = "none";
                 }
 
-                // --- RENDER TAB 1: PORUKE I SLIKE ---
                 feedContainer.innerHTML = "";
                 if (poruke.length === 0) {
                     feedContainer.innerHTML = "<p style='color:#adb5bd;'>Zid je prazan. Napišite nešto!</p>";
@@ -825,7 +877,6 @@
                         const date = new Date(post.created_at).toLocaleString('sr-RS', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' });
                         let imgHtml = post.slika_url ? `<img src="${post.slika_url}" class="post-img" alt="Uspomena">` : "";
 
-                        // Izdvajamo komentare i reakcije za ovaj post
                         let komentariHtml = "";
                         const pripadajuciKomentari = sveStvari.filter(k => k.poruka_id === post.id && !k.tekst.startsWith("[REAKCIJA]"));
                         pripadajuciKomentari.forEach(k => {
@@ -877,7 +928,6 @@
                     });
                 }
 
-                // --- RENDER TAB 2: MINI PLAYLISTA ---
                 playlistContainer.innerHTML = "";
                 if (pjesme.length === 0) {
                     playlistContainer.innerHTML = "<p style='color:#adb5bd;'>Nema još zakačenih pjesama. Pošalji prvu!</p>";
@@ -897,7 +947,6 @@
                     });
                 }
 
-                // --- DOGAĐAJI (Klikovi na reakcije i komentare) ---
                 document.querySelectorAll('.react-main-btn').forEach(btn => {
                     btn.onclick = function(e) {
                         e.stopPropagation();
