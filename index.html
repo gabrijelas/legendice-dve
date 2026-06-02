@@ -154,7 +154,7 @@
         .feed-container {
             max-height: 550px;
             overflow-y: auto;
-            margin-top: 20px;
+            margin-top: 15px;
             padding-right: 5px;
         }
 
@@ -178,7 +178,7 @@
             display: block;
         }
 
-        /* Stilovi za Muzičku kutiju */
+        /* Muzička kutija na vrhu */
         .music-box {
             background: linear-gradient(135deg, #fff0f3 0%, #ffe3e8 100%);
             border: 2px dashed #ff85a2;
@@ -231,7 +231,7 @@
             line-height: 1.4;
         }
 
-        /* Reakcije stilovi */
+        /* Reakcije */
         .reactions-container {
             position: relative;
             border-top: 1px solid #f1f3f5;
@@ -293,7 +293,7 @@
             border: 1px solid #ffe3e8;
         }
 
-        /* Sekcija za komentare */
+        /* Komentari */
         .comments-section {
             background: #fff8f9;
             border-radius: 10px;
@@ -382,6 +382,41 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* NOVI STILOVI ZA TABOVE */
+        .tabs-nav {
+            display: flex;
+            border-bottom: 2px solid #ffccd7;
+            margin-bottom: 15px;
+            margin-top: 10px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            padding: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #868e96;
+            cursor: pointer;
+            transition: all 0.2s;
+            outline: none;
+        }
+
+        .tab-btn.active {
+            color: #d6336c;
+            border-bottom: 3px solid #d6336c;
+            margin-bottom: -2px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -439,7 +474,7 @@
 
             <div style="border: 1px dashed #ffccd7; padding: 15px; border-radius: 12px; background: #fffafb; margin-bottom: 20px;">
                 <h3 style="font-size: 14px; margin-bottom: 8px; color: #d6336c;" id="posting-as-label">Dodaj nešto na naš zid</h3>
-                <input type="text" id="post-text-input" class="input-field" placeholder="Napiši poruku ili posvetu za pjesmu...">
+                <input type="text" id="post-text-input" class="input-field" placeholder="Napiši poruku ili posvetu...">
                 <input type="text" id="post-youtube-input" class="input-field" placeholder="Ubaci YouTube link pjesme (opciono) 🔗">
                 
                 <div class="upload-box" style="padding: 15px; margin-bottom: 10px; font-size: 13px;" id="upload-zone-box">
@@ -450,8 +485,18 @@
                 <button class="btn" id="btn-send-post" style="margin-top: 5px; padding: 8px;">Zakači na zid 📌</button>
             </div>
 
-            <h2 style="font-size: 16px; text-align: left; color: #d6336c; margin-bottom: 10px;">Porukice i pjesme:</h2>
-            <div class="feed-container" id="feed-container"></div>
+            <div class="tabs-nav">
+                <button class="tab-btn active" id="tab-btn-posts">💬 Poruke & Slike</button>
+                <button class="tab-btn" id="tab-btn-music">🎵 Plejlista</button>
+            </div>
+
+            <div id="tab-posts-content" class="tab-content active">
+                <div class="feed-container" id="feed-container"></div>
+            </div>
+
+            <div id="tab-music-content" class="tab-content">
+                <div class="feed-container" id="playlist-container"></div>
+            </div>
         </div>
     </div>
 
@@ -467,6 +512,7 @@
         let uploadedImageUrl = "";
         let currentUser = ""; 
 
+        // Biranje korisnika
         const userGuyBtn = document.getElementById('user-guy');
         const userGirlBtn = document.getElementById('user-girl');
 
@@ -482,6 +528,7 @@
             userGuyBtn.classList.remove('selected');
         });
 
+        // Upload slike na kapiji
         const gateFileInput = document.getElementById('gate-file-input');
         const uploadStatusText = document.getElementById('upload-status-text');
         const btnGateNext = document.getElementById('btn-gate-next');
@@ -559,7 +606,7 @@
             try {
                 await supabase
                     .from('anketa')
-                    .insert([{ odgovor: `${currentUser}: ${selectedMood}` }]);
+                    .insert([{odgovor: `${currentUser}: ${selectedMood}`}]);
 
                 await supabase
                     .from('poruke')
@@ -593,12 +640,12 @@
             }
         });
 
+        // Kontrola forme i upload slike u feedu
         let feedFileUrl = "";
         const feedFileInput = document.getElementById('feed-file-input');
         const feedUploadStatus = document.getElementById('feed-upload-status');
         const feedLoader = document.getElementById('feed-loader');
 
-        // Sakrij/prikaži upload slike ako se kuca YT link da olakšamo korisniku
         const ytInput = document.getElementById('post-youtube-input');
         ytInput.addEventListener('input', () => {
             const box = document.getElementById('upload-zone-box');
@@ -639,13 +686,13 @@
             }
         });
 
-        // Pomoćna funkcija koja izvlači ID video snimka iz YouTube linka
         function extractYoutubeId(url) {
             const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
             const match = url.match(regExp);
             return (match && match[2].length === 11) ? match[2] : null;
         }
 
+        // Slanje posta (Zid ili Pjesma)
         document.getElementById('btn-send-post').addEventListener('click', async () => {
             const textInput = document.getElementById('post-text-input');
             const ytInput = document.getElementById('post-youtube-input');
@@ -658,26 +705,33 @@
                 return;
             }
 
-            // Ako je unet YouTube link, označićemo tekst posebnom oznakom
-            if (ytUrl) {
-                const ytId = extractYoutubeId(ytUrl);
-                if (ytId) {
-                    text = `[PESMA:${ytId}] ${text}`;
-                } else {
-                    alert("YouTube link nije ispravan, provjeri ga opet! 🔗");
-                    return;
-                }
-            }
-
             try {
-                await supabase
-                    .from('poruke')
-                    .insert([{
-                        autor: currentUser,
-                        tekst: text,
-                        reakcija: "",
-                        slika_url: feedFileUrl 
-                    }]);
+                // Ako je unijet YouTube link, šaljemo u tabelu 'pjesme'
+                if (ytUrl) {
+                    const ytId = extractYoutubeId(ytUrl);
+                    if (ytId) {
+                        await supabase
+                            .from('pjesme')
+                            .insert([{
+                                autor: currentUser,
+                                tekst: text || "Uživaj u pjesmi...",
+                                yt_id: ytId
+                            }]);
+                    } else {
+                        alert("YouTube link nije ispravan, provjeri ga opet! 🔗");
+                        return;
+                    }
+                } else {
+                    // Inače ide kao standardna poruka na zid
+                    await supabase
+                        .from('poruke')
+                        .insert([{
+                            autor: currentUser,
+                            tekst: text,
+                            reakcija: "",
+                            slika_url: feedFileUrl 
+                        }]);
+                }
 
                 textInput.value = "";
                 ytInput.value = "";
@@ -689,15 +743,40 @@
 
             } catch (error) {
                 console.error(error);
-                alert("Greška pri slanju na zid.");
+                alert("Greška pri slanju.");
             }
         });
 
+        // LOGIKA ZA PROMJENU TABOVA
+        const tabBtnPosts = document.getElementById('tab-btn-posts');
+        const tabBtnMusic = document.getElementById('tab-btn-music');
+        const tabPostsContent = document.getElementById('tab-posts-content');
+        const tabMusicContent = document.getElementById('tab-music-content');
+
+        tabBtnPosts.addEventListener('click', () => {
+            tabBtnPosts.classList.add('active');
+            tabBtnMusic.classList.remove('active');
+            tabPostsContent.classList.add('active');
+            tabMusicContent.classList.remove('active');
+        });
+
+        tabBtnMusic.addEventListener('click', () => {
+            tabBtnMusic.classList.add('active');
+            tabBtnPosts.classList.remove('active');
+            tabMusicContent.classList.add('active');
+            tabPostsContent.classList.remove('active');
+        });
+
+        // PREUZIMANJE FEED-A I PLEJLISTE
         async function loadFeed() {
             const feedContainer = document.getElementById('feed-container');
+            const playlistContainer = document.getElementById('playlist-container');
+            
             feedContainer.innerHTML = "<p style='color:#adb5bd;'>Učitavam zid...</p>";
+            playlistContainer.innerHTML = "<p style='color:#adb5bd;'>Učitavam plejlistu...</p>";
 
             try {
+                // 1. Povuci poruke za zid
                 let { data: poruke, error: errorPoruke } = await supabase
                     .from('poruke')
                     .select('*')
@@ -705,6 +784,15 @@
 
                 if (errorPoruke) throw errorPoruke;
 
+                // 2. Povuci nove pjesme iz tabele 'pjesme'
+                let { data: pjesme, error: errorPjesme } = await supabase
+                    .from('pjesme')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (errorPjesme) throw errorPjesme;
+
+                // 3. Povuci sve komentare i reakcije
                 let sveStvari = [];
                 try {
                     let { data: komData } = await supabase
@@ -714,117 +802,102 @@
                     if (komData) sveStvari = komData;
                 } catch(e) { console.log("Greška sa povlačenjem komentara"); }
 
-                feedContainer.innerHTML = "";
-                
-                if (poruke.length === 0) {
-                    feedContainer.innerHTML = "<p style='color:#adb5bd;'>Zid je prazan. Napišite nešto!</p>";
-                    return;
-                }
-
-                // Logika za postavljanje pjesme dana na vrh u muzičku kutiju
-                const najnovijaPesma = poruke.find(p => p.tekst.startsWith("[PESMA:"));
+                // --- MUZIČKA KUTIJA (NAJNOVIJA PJESMA NA VRHU) ---
                 const musicBox = document.getElementById('music-box-container');
                 const musicMeta = document.getElementById('music-box-meta');
                 const musicIframeZone = document.getElementById('music-iframe-zone');
 
-                if (najnovijaPesma) {
-                    const parts = najnovijaPesma.tekst.split(']');
-                    const ytId = parts[0].replace("[PESMA:", "");
-                    const cistTekst = parts.slice(1).join(']').trim();
-
-                    musicMeta.innerHTML = `Zakačio/la <strong>${najnovijaPesma.autor}</strong>: "${cistTekst || 'Uživaj u pjesmi...'}"`;
-                    musicIframeZone.innerHTML = `<iframe src="https://www.youtube.com/embed/${ytId}" allowfullscreen></iframe>`;
+                if (pjesme && pjesme.length > 0) {
+                    const najnovijaPesma = pjesme[0];
+                    musicMeta.innerHTML = `Zakačio/la <strong>${najnovijaPesma.autor}</strong>: "${najnovijaPesma.tekst}"`;
+                    musicIframeZone.innerHTML = `<iframe src="https://www.youtube.com/embed/${najnovijaPesma.yt_id}" allowfullscreen></iframe>`;
                     musicBox.style.display = "block";
                 } else {
                     musicBox.style.display = "none";
                 }
 
-                poruke.forEach(post => {
-                    const date = new Date(post.created_at).toLocaleString('sr-RS', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' });
-                    
-                    let isPesma = post.tekst.startsWith("[PESMA:");
-                    let prikazTeksta = post.tekst;
-                    let ytPlayerHtml = "";
+                // --- RENDER TAB 1: PORUKE I SLIKE ---
+                feedContainer.innerHTML = "";
+                if (poruke.length === 0) {
+                    feedContainer.innerHTML = "<p style='color:#adb5bd;'>Zid je prazan. Napišite nešto!</p>";
+                } else {
+                    poruke.forEach(post => {
+                        const date = new Date(post.created_at).toLocaleString('sr-RS', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' });
+                        let imgHtml = post.slika_url ? `<img src="${post.slika_url}" class="post-img" alt="Uspomena">` : "";
 
-                    // Ako je pesma, sredićemo prikaz na zidu da izgleda lepo sa plejerom
-                    if (isPesma) {
-                        const parts = post.tekst.split(']');
-                        const ytId = parts[0].replace("[PESMA:", "");
-                        prikazTeksta = `🎵 <em>Zakačena pjesma:</em> ${parts.slice(1).join(']').trim()}`;
-                        ytPlayerHtml = `
-                            <div class="music-iframe-wrapper" style="margin-top:10px; margin-bottom:10px;">
-                                <iframe src="https://www.youtube.com/embed/${ytId}" allowfullscreen></iframe>
-                            </div>
-                        `;
-                    }
+                        // Izdvajamo komentare i reakcije za ovaj post
+                        let komentariHtml = "";
+                        const pripadajuciKomentari = sveStvari.filter(k => k.poruka_id === post.id && !k.tekst.startsWith("[REAKCIJA]"));
+                        pripadajuciKomentari.forEach(k => {
+                            komentariHtml += `<div class="comment-item"><strong>${k.autor}:</strong> ${k.tekst}</div>`;
+                        });
 
-                    let imgHtml = "";
-                    if (post.slika_url) {
-                        imgHtml = `<img src="${post.slika_url}" class="post-img" alt="Uspomena">`;
-                    }
+                        const pripadajuceReakcije = sveStvari.filter(k => k.poruka_id === post.id && k.tekst.startsWith("[REAKCIJA]"));
+                        let brojacEmodzija = {};
+                        pripadajuceReakcije.forEach(r => {
+                            const čistEmodzi = r.tekst.replace("[REAKCIJA]", "").trim();
+                            brojacEmodzija[čistEmodzi] = (brojacEmodzija[čistEmodzi] || 0) + 1;
+                        });
 
-                    // Izdvajamo prave tekstualne komentare
-                    let komentariHtml = "";
-                    const pripadajuciKomentari = sveStvari.filter(k => k.poruka_id === post.id && !k.tekst.startsWith("[REAKCIJA]"));
-                    pripadajuciKomentari.forEach(k => {
-                        komentariHtml += `
-                            <div class="comment-item">
-                                <strong>${k.autor}:</strong> ${k.tekst}
-                            </div>
-                        `;
-                    });
+                        let reakcijeHtml = "";
+                        Object.keys(brojacEmodzija).forEach(emoji => {
+                            reakcijeHtml += `<span class="reaction-badge">${emoji} ${brojacEmodzija[emoji]}</span>`;
+                        });
 
-                    // Izdvajamo reakcije iz tabele komentara i brojimo ih
-                    const pripadajuceReakcije = sveStvari.filter(k => k.poruka_id === post.id && k.tekst.startsWith("[REAKCIJA]"));
-                    let brojacEmodzija = {};
-                    pripadajuceReakcije.forEach(r => {
-                        const čistEmodzi = r.tekst.replace("[REAKCIJA]", "").trim();
-                        brojacEmodzija[čistEmodzi] = (brojacEmodzija[čistEmodzi] || 0) + 1;
-                    });
-
-                    let reakcijeHtml = "";
-                    Object.keys(brojacEmodzija).forEach(emoji => {
-                        reakcijeHtml += `
-                            <span class="reaction-badge">
-                                ${emoji} ${brojacEmodzija[emoji]}
-                            </span>
-                        `;
-                    });
-
-                    let postHtml = `
-                        <div class="post-card" data-id="${post.id}">
-                            <div class="post-meta">✏️ <strong>${post.autor}</strong> • ${date}</div>
-                            <div class="post-text">${prikazTeksta}</div>
-                            ${ytPlayerHtml}
-                            ${imgHtml}
-                            
-                            <div class="reactions-container">
-                                <button class="react-main-btn">❤️ Reaguj</button>
-                                <div class="emoji-popover">
-                                    <span class="emoji-click" data-emoji="❤️">❤️</span>
-                                    <span class="emoji-click" data-emoji="🔥">🔥</span>
-                                    <span class="emoji-click" data-emoji="😂">😂</span>
-                                    <span class="emoji-click" data-emoji="😍">😍</span>
-                                    <span class="emoji-click" data-emoji="😢">😢</span>
+                        let postHtml = `
+                            <div class="post-card" data-id="${post.id}">
+                                <div class="post-meta">✏️ <strong>${post.autor}</strong> • ${date}</div>
+                                <div class="post-text">${post.tekst}</div>
+                                ${imgHtml}
+                                
+                                <div class="reactions-container">
+                                    <button class="react-main-btn">❤️ Reaguj</button>
+                                    <div class="emoji-popover">
+                                        <span class="emoji-click" data-emoji="❤️">❤️</span>
+                                        <span class="emoji-click" data-emoji="🔥">🔥</span>
+                                        <span class="emoji-click" data-emoji="😂">😂</span>
+                                        <span class="emoji-click" data-emoji="😍">😍</span>
+                                        <span class="emoji-click" data-emoji="😢">😢</span>
+                                    </div>
+                                    <div class="active-reactions-list">
+                                        ${reakcijeHtml}
+                                    </div>
                                 </div>
-                                <div class="active-reactions-list">
-                                    ${reakcijeHtml}
+
+                                <div class="comments-section">
+                                    <div class="comments-list">${komentariHtml || '<p style="color:#adb5bd; font-size:12px; font-style:italic;">Nema komentara...</p>'}</div>
+                                    <div class="comment-input-box">
+                                        <input type="text" class="comment-field" placeholder="Napiši komentar...">
+                                        <button class="comment-submit-btn">✈️</button>
+                                    </div>
                                 </div>
                             </div>
+                        `;
+                        feedContainer.innerHTML += postHtml;
+                    });
+                }
 
-                            <div class="comments-section">
-                                <div class="comments-list">${komentariHtml || '<p style="color:#adb5bd; font-size:12px; font-style:italic;">Nema komentara...</p>'}</div>
-                                <div class="comment-input-box">
-                                    <input type="text" class="comment-field" placeholder="Napiši komentar...">
-                                    <button class="comment-submit-btn">✈️</button>
+                // --- RENDER TAB 2: MINI PLAYLISTA ---
+                playlistContainer.innerHTML = "";
+                if (pjesme.length === 0) {
+                    playlistContainer.innerHTML = "<p style='color:#adb5bd;'>Nema još zakačenih pjesama. Pošalji prvu!</p>";
+                } else {
+                    pjesme.forEach(pjesma => {
+                        const date = new Date(pjesma.created_at).toLocaleString('sr-RS', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' });
+                        let pjesmaHtml = `
+                            <div class="post-card">
+                                <div class="post-meta">🎵 <strong>${pjesma.autor}</strong> • ${date}</div>
+                                <div class="post-text" style="font-weight: 600; color: #d6336c;">Posveta: <span style="font-weight: normal; color: #4a3b40; font-style: italic;">"${pjesma.tekst}"</span></div>
+                                <div class="music-iframe-wrapper">
+                                    <iframe src="https://www.youtube.com/embed/${pjesma.yt_id}" allowfullscreen></iframe>
                                 </div>
                             </div>
-                        </div>
-                    `;
-                    feedContainer.innerHTML += postHtml;
-                });
+                        `;
+                        playlistContainer.innerHTML += pjesmaHtml;
+                    });
+                }
 
-                // Otvaranje menija sa emodžijima
+                // --- DOGAĐAJI (Klikovi na reakcije i komentare) ---
                 document.querySelectorAll('.react-main-btn').forEach(btn => {
                     btn.onclick = function(e) {
                         e.stopPropagation();
@@ -839,7 +912,6 @@
                     document.querySelectorAll('.emoji-popover').forEach(p => p.style.display = 'none');
                 };
 
-                // Klik na željeni emodži
                 document.querySelectorAll('.emoji-click').forEach(span => {
                     span.onclick = function() {
                         const emoji = this.getAttribute('data-emoji');
@@ -848,7 +920,6 @@
                     };
                 });
 
-                // Slanje komentara
                 document.querySelectorAll('.comment-submit-btn').forEach(btn => {
                     btn.onclick = function() {
                         const input = this.previousElementSibling;
