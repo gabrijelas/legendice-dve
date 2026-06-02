@@ -178,6 +178,46 @@
             display: block;
         }
 
+        /* Stilovi za Muzičku kutiju */
+        .music-box {
+            background: linear-gradient(135deg, #fff0f3 0%, #ffe3e8 100%);
+            border: 2px dashed #ff85a2;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: left;
+            box-shadow: 0 4px 10px rgba(255, 133, 162, 0.1);
+        }
+
+        .music-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #d6336c;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .music-iframe-wrapper {
+            position: relative;
+            width: 100%;
+            height: 0;
+            padding-bottom: 56.25%; /* 16:9 Odnos stranica za YouTube */
+            margin-top: 8px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .music-iframe-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
         .post-meta {
             font-size: 12px;
             color: #adb5bd;
@@ -347,7 +387,6 @@
 <body>
 
     <div class="container">
-        <!-- KAPIJA SA IZBOROM KORISNIKA -->
         <div id="screen-gate" class="screen active">
             <h1>Dobrodošao/la ❤️</h1>
             <p class="subtitle">Ko nam to danas otvara kapiju?</p>
@@ -367,7 +406,6 @@
             <button class="btn" id="btn-gate-next" style="display: none;">Otvori kapiju ✨</button>
         </div>
 
-        <!-- ANKETA -->
         <div id="screen-poll" class="screen">
             <h1>Kako si mi danas? 🥰</h1>
             <p class="subtitle">Izaberi odgovor da bi nastavio/la dalje...</p>
@@ -389,16 +427,22 @@
             <button class="btn" id="btn-poll-submit" disabled style="opacity: 0.5;">Pošalji odgovor 💌</button>
         </div>
 
-        <!-- GLAVNI EKRAN (ZID) -->
         <div id="screen-main" class="screen">
             <h1 id="welcome-title"> Feed Savršenih </h1>
             <p class="subtitle" id="sweet-comment">Hvala ti na odgovoru!</p>
             
+            <div class="music-box" id="music-box-container" style="display: none;">
+                <div class="music-title">🎵 Naša pjesma dana:</div>
+                <div id="music-box-meta" style="font-size: 13px; color: #4a3b40; margin-bottom: 5px; font-style: italic;"></div>
+                <div class="music-iframe-wrapper" id="music-iframe-zone"></div>
+            </div>
+
             <div style="border: 1px dashed #ffccd7; padding: 15px; border-radius: 12px; background: #fffafb; margin-bottom: 20px;">
                 <h3 style="font-size: 14px; margin-bottom: 8px; color: #d6336c;" id="posting-as-label">Dodaj nešto na naš zid</h3>
-                <input type="text" id="post-text-input" class="input-field" placeholder="Napiši poruku...">
+                <input type="text" id="post-text-input" class="input-field" placeholder="Napiši poruku ili posvetu za pjesmu...">
+                <input type="text" id="post-youtube-input" class="input-field" placeholder="Ubaci YouTube link pjesme (opciono) 🔗">
                 
-                <div class="upload-box" style="padding: 15px; margin-bottom: 10px; font-size: 13px;">
+                <div class="upload-box" style="padding: 15px; margin-bottom: 10px; font-size: 13px;" id="upload-zone-box">
                     <span id="feed-upload-status">Dodaj i sliku (opciono) 📷</span>
                     <input type="file" id="feed-file-input" accept="image/*">
                 </div>
@@ -406,7 +450,7 @@
                 <button class="btn" id="btn-send-post" style="margin-top: 5px; padding: 8px;">Zakači na zid 📌</button>
             </div>
 
-            <h2 style="font-size: 16px; text-align: left; color: #d6336c; margin-bottom: 10px;">Porukice:</h2>
+            <h2 style="font-size: 16px; text-align: left; color: #d6336c; margin-bottom: 10px;">Porukice i pjesme:</h2>
             <div class="feed-container" id="feed-container"></div>
         </div>
     </div>
@@ -427,13 +471,13 @@
         const userGirlBtn = document.getElementById('user-girl');
 
         userGuyBtn.addEventListener('click', () => {
-            currentUser = "Savršeni dečko 👑";
+            currentUser = "Gospodin Savršeni 👑";
             userGuyBtn.classList.add('selected');
             userGirlBtn.classList.remove('selected');
         });
 
         userGirlBtn.addEventListener('click', () => {
-            currentUser = "Savršena devojka 🌸";
+            currentUser = "Gospodjica Savršena 🌸";
             userGirlBtn.classList.add('selected');
             userGuyBtn.classList.remove('selected');
         });
@@ -554,6 +598,17 @@
         const feedUploadStatus = document.getElementById('feed-upload-status');
         const feedLoader = document.getElementById('feed-loader');
 
+        // Sakrij/prikaži upload slike ako se kuca YT link da olakšamo korisniku
+        const ytInput = document.getElementById('post-youtube-input');
+        ytInput.addEventListener('input', () => {
+            const box = document.getElementById('upload-zone-box');
+            if(ytInput.value.trim() !== "") {
+                box.style.opacity = "0.4";
+            } else {
+                box.style.opacity = "1";
+            }
+        });
+
         feedFileInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -584,13 +639,34 @@
             }
         });
 
+        // Pomoćna funkcija koja izvlači ID video snimka iz YouTube linka
+        function extractYoutubeId(url) {
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : null;
+        }
+
         document.getElementById('btn-send-post').addEventListener('click', async () => {
             const textInput = document.getElementById('post-text-input');
-            const text = textInput.value.trim();
+            const ytInput = document.getElementById('post-youtube-input');
+            
+            let text = textInput.value.trim();
+            const ytUrl = ytInput.value.trim();
 
-            if (!text && !feedFileUrl) {
-                alert("Napiši neku poruku ili ubaci sliku!");
+            if (!text && !feedFileUrl && !ytUrl) {
+                alert("Napiši neku poruku, ubaci sliku ili dodaj pjesmu!");
                 return;
+            }
+
+            // Ako je unet YouTube link, označićemo tekst posebnom oznakom
+            if (ytUrl) {
+                const ytId = extractYoutubeId(ytUrl);
+                if (ytId) {
+                    text = `[PESMA:${ytId}] ${text}`;
+                } else {
+                    alert("YouTube link nije ispravan, provjeri ga opet! 🔗");
+                    return;
+                }
             }
 
             try {
@@ -604,7 +680,9 @@
                     }]);
 
                 textInput.value = "";
+                ytInput.value = "";
                 feedFileUrl = "";
+                document.getElementById('upload-zone-box').style.opacity = "1";
                 feedUploadStatus.innerText = "Dodaj i sliku (opciono) 📷";
 
                 loadFeed();
@@ -643,9 +721,43 @@
                     return;
                 }
 
+                // Logika za postavljanje pjesme dana na vrh u muzičku kutiju
+                const najnovijaPesma = poruke.find(p => p.tekst.startsWith("[PESMA:"));
+                const musicBox = document.getElementById('music-box-container');
+                const musicMeta = document.getElementById('music-box-meta');
+                const musicIframeZone = document.getElementById('music-iframe-zone');
+
+                if (najnovijaPesma) {
+                    const parts = najnovijaPesma.tekst.split(']');
+                    const ytId = parts[0].replace("[PESMA:", "");
+                    const cistTekst = parts.slice(1).join(']').trim();
+
+                    musicMeta.innerHTML = `Zakačio/la <strong>${najnovijaPesma.autor}</strong>: "${cistTekst || 'Uživaj u pjesmi...'}"`;
+                    musicIframeZone.innerHTML = `<iframe src="https://www.youtube.com/embed/${ytId}" allowfullscreen></iframe>`;
+                    musicBox.style.display = "block";
+                } else {
+                    musicBox.style.display = "none";
+                }
+
                 poruke.forEach(post => {
                     const date = new Date(post.created_at).toLocaleString('sr-RS', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' });
                     
+                    let isPesma = post.tekst.startsWith("[PESMA:");
+                    let prikazTeksta = post.tekst;
+                    let ytPlayerHtml = "";
+
+                    // Ako je pesma, sredićemo prikaz na zidu da izgleda lepo sa plejerom
+                    if (isPesma) {
+                        const parts = post.tekst.split(']');
+                        const ytId = parts[0].replace("[PESMA:", "");
+                        prikazTeksta = `🎵 <em>Zakačena pjesma:</em> ${parts.slice(1).join(']').trim()}`;
+                        ytPlayerHtml = `
+                            <div class="music-iframe-wrapper" style="margin-top:10px; margin-bottom:10px;">
+                                <iframe src="https://www.youtube.com/embed/${ytId}" allowfullscreen></iframe>
+                            </div>
+                        `;
+                    }
+
                     let imgHtml = "";
                     if (post.slika_url) {
                         imgHtml = `<img src="${post.slika_url}" class="post-img" alt="Uspomena">`;
@@ -682,10 +794,10 @@
                     let postHtml = `
                         <div class="post-card" data-id="${post.id}">
                             <div class="post-meta">✏️ <strong>${post.autor}</strong> • ${date}</div>
-                            <div class="post-text">${post.tekst}</div>
+                            <div class="post-text">${prikazTeksta}</div>
+                            ${ytPlayerHtml}
                             ${imgHtml}
                             
-                            <!-- REAKCIJE -->
                             <div class="reactions-container">
                                 <button class="react-main-btn">❤️ Reaguj</button>
                                 <div class="emoji-popover">
@@ -700,7 +812,6 @@
                                 </div>
                             </div>
 
-                            <!-- KOMENTARI -->
                             <div class="comments-section">
                                 <div class="comments-list">${komentariHtml || '<p style="color:#adb5bd; font-size:12px; font-style:italic;">Nema komentara...</p>'}</div>
                                 <div class="comment-input-box">
@@ -757,7 +868,6 @@
 
         async function addReactionAsComment(postId, emoji) {
             try {
-                // Proveravamo da li si već ostavio/la taj emodži da ga sklonimo ako klikneš ponovo
                 let { data: postojece } = await supabase
                     .from('komentari')
                     .select('*')
